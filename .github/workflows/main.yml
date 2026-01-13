@@ -7,9 +7,12 @@ on:
 
 jobs:
   test:
-    name: Functional Test
+    name: test (${{ matrix.browser }})
     permissions: write-all
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [firefox, chrome, edge]
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -21,7 +24,7 @@ jobs:
         run: docker build -t my-php-site:latest .
 
       - name: Run AUT
-        run: docker run --network=isolated -p 80:80 --name docker-apache -t -d my-php-site:latest
+        run: docker run --network=isolated -p 80:80 --name docker-apache-${{ matrix.browser }} -t -d my-php-site:latest
 
       - name: Get AUT URL
         run: |
@@ -32,7 +35,7 @@ jobs:
         run: curl ${{ env.URL }}
 
       - name: Selenium Preparation
-        run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name firefox-standalone selenium/standalone-firefox:latest
+        run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name ${{ matrix.browser }}-standalone selenium/standalone-${{ matrix.browser }}:latest
 
       - name: Wait for Selenium Hub
         run: sh wait.sh
@@ -44,13 +47,13 @@ jobs:
         run: pip install -U selenium
 
       - name: Run test
-        run: python tests/hello_aut.py ${{ env.URL }}
+        run: python tests/hello_aut.py ${{ env.URL }} ${{ matrix.browser }}
 
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: Screenshot
-          path: screenshot.png
+          name: Screenshot-${{ matrix.browser }}
+          path: screenshot-${{ matrix.browser }}.png
 
       - name: stop docker
-        run: docker stop docker-apache
+        run: docker stop docker-apache-${{ matrix.browser }}

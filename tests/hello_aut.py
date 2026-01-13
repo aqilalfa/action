@@ -5,7 +5,16 @@ from selenium.webdriver.common.by import By
 class AutTest(unittest.TestCase):
 
     def setUp(self):
-        options = webdriver.FirefoxOptions()
+        # Get browser from command line argument, default to firefox
+        browser = sys.argv[2] if len(sys.argv) > 2 else 'firefox'
+        
+        if browser.lower() == 'chrome':
+            options = webdriver.ChromeOptions()
+        elif browser.lower() == 'edge':
+            options = webdriver.EdgeOptions()
+        else:
+            options = webdriver.FirefoxOptions()
+            
         options.add_argument('--ignore-ssl-errors=yes')
         options.add_argument('--ignore-certificate-errors')
         server = 'http://localhost:4444'
@@ -18,9 +27,11 @@ class AutTest(unittest.TestCase):
             url = sys.argv[1]
         else:
             url = "http://localhost"
+            
+        browser_name = sys.argv[2] if len(sys.argv) > 2 else 'firefox'
 
         self.browser.get(url)
-        self.browser.save_screenshot('screenshot.png')
+        self.browser.save_screenshot(f'screenshot-{browser_name}.png')
         expected_result = "Welcome back, Guest!"
         actual_result = self.browser.find_element(By.TAG_NAME, 'p')
 
